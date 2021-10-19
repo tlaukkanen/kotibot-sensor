@@ -1,36 +1,28 @@
-var BME280 = require('node-bme280');
+var BME280 = require('bme280');
 var Wreck = require('wreck');
-var barometer = new BME280({address: 0x76});
 
-barometer.begin(function(err) {
-  if(err) {
-    console.info('error initializing barometer', err);
-    return;
-  }
 
-  console.log('barometer running');
+BME280.open({
+  i2cBusNumber: 1,
+  i2cAddress: 0x76
+}).then(async sensor => {
+  let reading = await sensor.read();
+  await sensor.close();
 
-  setInterval(function() {
-    barometer.readPressureAndTemparature(function(err, pressure, temperature, humidity) {
-      console.info(
-        'temp:', temperature.toFixed(2),
-	'C pressure: ', (pressure/100).toFixed(2),
-	'hPa  hum: ', humidity.toFixed(2),
-	'%');
-      var measurement = {
-      	temperature: temperature.toFixed(2),
-	pressure:    (pressure/100).toFixed(2),
-        humidity:    humidity.toFixed(2),
-	location: process.env.KOTIBOT_SENSOR_LOCATION
-      };
+  let measurement = {
+    temperature: parseFloat(reading.temperature.toFixed(2)),
+    pressure: parseFloat(reading.pressure.toFixed(2)),
+    humidity: parseFloat(reading.humidity.toFixed(2)),
+    location: process.env.KOTIBOT_SENSOR_LOCATION
+  };
 
-      Wreck.post( process.env.KOTIBOT_SERVER_ENDPOINT, {payload: measurement}, (err, res, payload) => {
-        if(err) {
-	  console.log('Error while posting measuremet: ', err);
-	  return;
-	}	
-	console.log('Measurement posted');
-      });
-    });
-  }, 600000);
-});
+  console.log(measurement);
+
+  Wreck.post(process.env.KOTIBOT_SERVER_ENDPOINT, { payload: measurement }, (err, res, payload) => {
+    if (err) {
+      console.log('Error while posting measurement: ', err);
+      return;
+    }
+    console.log('posted');
+  });
+}).catch(console.log);

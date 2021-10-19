@@ -1,0 +1,14 @@
+module.exports = {
+  apps : [{
+    name   : "Sensor",
+    script : "./index.js",
+    env: {
+            "KOTIBOT_SERVER_ENDPOINT": "https://your-endpoint",
+            "KOTIBOT_SERVER_LOCATION": "Office"
+    },
+    cron_restart: "*/15 * * * *",
+    watch: false,
+    autorestart: false,
+    instances: 1
+  }]
+}
